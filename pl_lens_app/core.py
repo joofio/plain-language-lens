@@ -72,19 +72,48 @@ LANGUAGE_MAP = {
 }
 
 
-def parse_response(response, type="response"):
-    parsed_response = ""
-    for line in response.split("\n"):
-        # print(line)
-        try:
-            d = json.loads(line)
-            if type == "response":
-                parsed_response += d["response"]
-            if type == "chat":
-                parsed_response += d["message"]["content"]
-        except:
-            pass
-    return parsed_response
+def create_extensions(epibundle, responses, classfound):
+    for idx, response in enumerate(responses):
+        #   print(response)
+        epibundle["entry"][0]["resource"]["extension"].append(
+            {
+                "extension": [
+                    {
+                        "url": "elementClass",
+                        "valueString": "plain-language-lens-" + str(idx),
+                    },
+                    {
+                        "url": "type",
+                        "valueCodeableConcept": {
+                            "coding": [
+                                {
+                                    "system": "http://hl7.eu/fhir/ig/gravitate-health/CodeSystem/type-of-data-cs",
+                                    "code": "TXT",
+                                    "display": "Text",
+                                }
+                            ]
+                        },
+                    },
+                    {"url": "concept", "valueString": response},
+                ],
+                "url": "http://hl7.eu/fhir/ig/gravitate-health/StructureDefinition/AdditionalInformation",
+            }
+        )
+    nidx = 0
+
+    for ep in epibundle["entry"][0]["resource"]["section"][0]["section"]:
+        soup = BeautifulSoup(ep["text"]["div"], "html.parser")
+        element = soup.find(class_=classfound)
+        if element:
+            # Add the new class to the existing classes
+            element["class"] = element.get("class", []) + [
+                "plain-language-lens-" + str(nidx)
+            ]
+            nidx += 1
+
+            # Update the original HTML content with the modified BeautifulSoup object
+            ep["text"]["div"] = str(soup)
+    return epibundle
 
 
 def process_bundle_extensions(bundle):
@@ -156,6 +185,15 @@ def process_ips(ips):
     return gender, age, diagnostics, meds
 
 
+def parse_response_split(response):
+    nresp = []
+    for r in response.split("|"):
+        if r.strip() != "":
+            nresp.append(r.strip())
+
+    return nresp
+
+
 def explaining_plain_language(
     language, data_to_explain, age, diagnostics, medications, model
 ):
@@ -171,7 +209,6 @@ def explaining_plain_language(
     else:
         diagnostics_texts = "without any diagnostics"
     piped_sentences = "|".join(data_to_explain)
-    prompt = f"Please simplify the following technical health information for a {age}-year-old. Each piece of information is separated by '|'. Provide the simplified explanation in the same format, keeping the delimiter '|'.\n\nOriginal:{piped_sentences}\nAnswer:"
     prompt = f"Please simplify the following technical health information into plain language suitable for a {age}-year-old. Each piece of information is separated by '|'. Provide the simplified explanation for each piece of information in the same order, using the same delimiter '|'. Ensure the explanations are clear, concise, and easy to understand.\n\nOriginal: {piped_sentences}\nAnswer:"
     if "llama3" in model:
         systemMessage = (
@@ -199,9 +236,18 @@ def explaining_plain_language(
 
         response = result["message"]["content"]
         print(response)
-        print(response.split("|"))
+        # print(response.split("|"))
+
+        parsed_response = parse_response_split(response)
+        if len(parsed_response) != len(data_to_explain):
+            errormessage = (
+                "Error: The number of responses does not match the number of inputs",
+                len(parsed_response),
+                len(data_to_explain),
+            )
+            raise Exception(errormessage)
     return {
-        "response": response,
+        "response": parsed_response,
         "prompt": prompt,
         "datetime": datetime.now(),
         "model": model,

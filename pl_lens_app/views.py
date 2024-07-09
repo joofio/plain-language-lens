@@ -6,9 +6,9 @@ from pl_lens_app.core import (
     process_bundle_extensions,
     process_ips,
     explaining_plain_language,
+    create_extensions,
 )
-from fhir.resources.composition import Composition
-from fhir.resources.annotation import Annotation
+
 
 print(app.config)
 
@@ -20,9 +20,6 @@ def hello():
         "status": "OK",
     }
     return jsonify(json_obj)
-
-
-##POST https://fosps.gravitatehealth.eu/focusing/focus/bundlepackageleaflet-es-56a32a5ee239fc834b47c10db1faa3fd?preprocessors=preprocessing-service-manual&patientIdentifier=Cecilia-1&lenses=lens-selector-mvp2_pregnancy
 
 
 @app.route("/plain-language", methods=["POST"])
@@ -80,8 +77,16 @@ def lens_app(bundleid=None):
     response = explaining_plain_language(
         language, data_to_explain, age, diagnostics, medications, model
     )
+    newbundle = create_extensions(epibundle, response["response"], classfound)
 
-    # Return the JSON response
-    # print(response)
+    newbundle["entry"][0]["resource"]["category"][0] = {
+        "coding": [
+            {
+                "system": "http://hl7.eu/fhir/ig/gravitate-health/CodeSystem/epicategory-cs",
+                "code": "F",
+                "display": "Focused",
+            }
+        ]
+    }
 
-    return jsonify("ok")
+    return jsonify(newbundle)
