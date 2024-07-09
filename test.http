@@ -1,0 +1,9 @@
+
+### Test the FHIR server - summary 2 with sent IPS
+
+POST http://localhost:5005/plain-language?preprocessors=preprocessing-service-manual&lenses=plain-language-lens&model=llama3&patientIdentifier=Cecilia-1
+content-type: application/json
+
+< tests/example1.json
+
+
