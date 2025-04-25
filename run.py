@@ -2,7 +2,6 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
-
 from pl_lens_app import app
 from pl_lens_app.customJsonify import FhirJSONProvider
 

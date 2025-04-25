@@ -1,14 +1,14 @@
-from flask import request, jsonify
-from pl_lens_app import app
 import requests
+from flask import jsonify, request
+
+from pl_lens_app import app
 from pl_lens_app.core import (
     SERVER_URL,
+    create_extensions,
+    explaining_plain_language,
     process_bundle_extensions,
     process_ips,
-    explaining_plain_language,
-    create_extensions,
 )
-
 
 print(app.config)
 

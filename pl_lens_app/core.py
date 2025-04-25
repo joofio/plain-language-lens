@@ -1,14 +1,12 @@
-from datetime import datetime
-from fhirpathpy import evaluate
-from dotenv import load_dotenv
 import os
-from openai import OpenAI
-import json
-from ollama import Client
-import markdown
-import re
+from datetime import datetime
+
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+from fhirpathpy import evaluate
 from groq import Groq
+from ollama import Client
+from openai import OpenAI
 
 load_dotenv()
 
